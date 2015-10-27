@@ -30,7 +30,7 @@ public class RSSFeedSAXHandler extends DefaultHandler {
     //-- DefaultHandler overrides
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) {
-        if(qName.equalsIgnoreCase("item")) {
+        if ("item".equalsIgnoreCase(qName)) {
             item = new Item();
         }
 
@@ -46,7 +46,7 @@ public class RSSFeedSAXHandler extends DefaultHandler {
 
     @Override
     public void endElement(String uri, String localName, String qName) {
-        if (qName.equalsIgnoreCase("item")) {
+        if ("item".equalsIgnoreCase(qName)) {
             items.add(item);
             item = null;
         } else if (item == null) {
@@ -84,8 +84,6 @@ public class RSSFeedSAXHandler extends DefaultHandler {
                 } catch (ParseException e) {
                     LOGGER.warn("Invalid publish date", e);
                 }
-
-            default:
                 break;
         }
     }

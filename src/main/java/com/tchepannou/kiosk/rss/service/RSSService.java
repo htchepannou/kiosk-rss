@@ -1,5 +1,5 @@
 package com.tchepannou.kiosk.rss.service;
 
-public interface FetcherService {
+public interface RSSService {
     void fetch ();
 }
