@@ -49,22 +49,44 @@ public class RSSFeedSAXHandler extends DefaultHandler {
         if (qName.equalsIgnoreCase("item")) {
             items.add(item);
             item = null;
+        } else if (item == null) {
+            return;
         }
 
-        if (qName.equalsIgnoreCase("title")) {
-            item.setTitle(text.toString());
-        } else if (qName.equalsIgnoreCase("description")) {
-            item.setDescription(text.toString());
-        } else if (qName.equalsIgnoreCase("content:encoded")) {
-            item.setContent(text.toString());
-        } else if (qName.equalsIgnoreCase("link")) {
-            item.setLink(text.toString());
-        } else if (qName.equalsIgnoreCase("pubDate")) {
-            try {
-                item.setPublishedDate(dateFormat.parse(text.toString()));
-            } catch (ParseException e) {
-                LOGGER.warn("Invalid publish date", e);
-            }
+        switch (qName.toLowerCase()){
+            case "title":
+                item.setTitle(text.toString());
+                break;
+
+            case "description":
+                item.setDescription(text.toString());
+                break;
+
+            case "content:encoded":
+                item.setContent(text.toString());
+                break;
+
+            case "language":
+                item.setLanguage(text.toString());
+                break;
+
+            case "link":
+                item.setLink(text.toString());
+                break;
+
+            case "category":
+                item.addCategory(text.toString());
+                break;
+
+            case "pubdate":
+                try {
+                    item.setPublishedDate(dateFormat.parse(text.toString()));
+                } catch (ParseException e) {
+                    LOGGER.warn("Invalid publish date", e);
+                }
+
+            default:
+                break;
         }
     }
     

@@ -1,20 +1,31 @@
 package com.tchepannou.kiosk.rss.model;
 
+import org.apache.commons.codec.digest.DigestUtils;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class Item {
     //-- Attributes
+    private String id;
     private String link;
     private String title;
     private String description;
-    private List<String> categories;
+    private List<String> categories = new ArrayList<>();
     private String language;
     private String country;
     private String content;
     private Date publishedDate;
 
     //-- Getter/Setter
+    public String getId() {
+        if (id == null){
+            id = DigestUtils.md5Hex(link);
+        }
+        return id;
+    }
+
     public String getLink() {
         return link;
     }
@@ -77,5 +88,9 @@ public class Item {
 
     public Date getPublishedDate() {
         return publishedDate;
+    }
+
+    public void addCategory(String category) {
+        categories.add(category);
     }
 }
