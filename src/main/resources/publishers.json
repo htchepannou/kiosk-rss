@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1,
+    "name": "Mboa Football",
+    "website": "http://mboafootball.com",
+    "feed": "http://mboafootball.com/rss",
+    "feedType": "rss",
+    "categories": ["sport", "football"],
+    "country": "CM"
+  }
+,{
+  "id": 2,
+  "name": "Cameoon Post Online",
+  "website": "http://www.cameroonpostline.com",
+  "feed": "http://www.cameroonpostline.com/feed/",
+  "feedType": "rss",
+  "country": "CM"
+}
+]
