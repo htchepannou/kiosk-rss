@@ -2,13 +2,14 @@ package com.tchepannou.kiosk.rss.service.impl;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tchepannou.kiosk.rss.model.Publisher;
-import com.tchepannou.kiosk.rss.service.PublisherService;
+import com.tchepannou.kiosk.rss.model.Feed;
+import com.tchepannou.kiosk.rss.service.FeedService;
 import com.tchepannou.kiosk.rss.service.URLService;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +30,7 @@ import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RSSServiceImplTest {
-    @Mock private PublisherService publisherService;
+    @Mock private FeedService publisherService;
     @Mock private AmazonS3 s3;
     @Mock private URLService urlService;
     @Mock private MetricRegistry metrics;
@@ -58,13 +59,17 @@ public class RSSServiceImplTest {
     @Test
     public void fetch() throws Exception {
         // Given
-        Publisher p1 = createPublisher("rss");
-        Publisher p2 = createPublisher("rss");
-        Publisher p3 = createPublisher("tweeter");
-        when(publisherService.getPublishers()).thenReturn(Arrays.asList(p1, p2, p3));
+        Feed p1 = createPublisher("rss");
+        Feed p2 = createPublisher("rss");
+        Feed p3 = createPublisher("tweeter");
+        when(publisherService.getFeeds()).thenReturn(Arrays.asList(p1, p2, p3));
 
         when(urlService.fetch(new URL(p1.getFeed()))).thenReturn(getClass().getResourceAsStream("/rss_1.xml"));
         when(urlService.fetch(new URL(p2.getFeed()))).thenReturn(getClass().getResourceAsStream("/rss_2.xml"));
+
+        AmazonS3Exception ex = mock(AmazonS3Exception.class);
+        when(ex.getStatusCode()).thenReturn(404);
+        when(s3.getObject(any(GetObjectRequest.class))).thenThrow(ex);
 
         // When
         service.fetch();
@@ -82,13 +87,17 @@ public class RSSServiceImplTest {
     @Test
     public void fetchWithURLFetchError() throws Exception {
         // Given
-        Publisher p1 = createPublisher("rss");
-        Publisher p2 = createPublisher("rss");
-        Publisher p3 = createPublisher("tweeter");
-        when(publisherService.getPublishers()).thenReturn(Arrays.asList(p1, p2, p3));
+        Feed p1 = createPublisher("rss");
+        Feed p2 = createPublisher("rss");
+        Feed p3 = createPublisher("tweeter");
+        when(publisherService.getFeeds()).thenReturn(Arrays.asList(p1, p2, p3));
 
         when(urlService.fetch(new URL(p1.getFeed()))).thenReturn(getClass().getResourceAsStream("/rss_1.xml"));
         when(urlService.fetch(new URL(p2.getFeed()))).thenThrow(IOException.class);
+
+        AmazonS3Exception ex = mock(AmazonS3Exception.class);
+        when(ex.getStatusCode()).thenReturn(404);
+        when(s3.getObject(any(GetObjectRequest.class))).thenThrow(ex);
 
         // When
         service.fetch();
@@ -106,14 +115,17 @@ public class RSSServiceImplTest {
     @Test
     public void fetchWithURLS3Error() throws Exception {
         // Given
-        Publisher p1 = createPublisher("rss");
-        Publisher p2 = createPublisher("rss");
-        Publisher p3 = createPublisher("tweeter");
-        when(publisherService.getPublishers()).thenReturn(Arrays.asList(p1, p2, p3));
+        Feed p1 = createPublisher("rss");
+        Feed p2 = createPublisher("rss");
+        Feed p3 = createPublisher("tweeter");
+        when(publisherService.getFeeds()).thenReturn(Arrays.asList(p1, p2, p3));
 
         when(urlService.fetch(new URL(p1.getFeed()))).thenReturn(getClass().getResourceAsStream("/rss_1.xml"));
         when(urlService.fetch(new URL(p2.getFeed()))).thenReturn(getClass().getResourceAsStream("/rss_2.xml"));
 
+        AmazonS3Exception ex = mock(AmazonS3Exception.class);
+        when(ex.getStatusCode()).thenReturn(404);
+        when(s3.getObject(any(GetObjectRequest.class))).thenThrow(ex);
         when(s3.putObject(any(PutObjectRequest.class))).thenThrow(AmazonS3Exception.class);
 
         // When
@@ -126,9 +138,9 @@ public class RSSServiceImplTest {
         verify(errorMeter, times(2)).mark();
     }
 
-    private Publisher createPublisher (String feedType){
+    private Feed createPublisher (String feedType){
         final String id = UUID.randomUUID().toString();
-        final Publisher p = new Publisher();
+        final Feed p = new Feed();
 
         p.setName(id);
         p.setFeed("http://foo.bar/feed/" + id);

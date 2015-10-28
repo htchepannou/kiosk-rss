@@ -8,12 +8,12 @@
     "categories": ["sport", "football"],
     "country": "CM"
   }
-,{
-  "id": 2,
-  "name": "Cameoon Post Online",
-  "website": "http://www.cameroonpostline.com",
-  "feed": "http://www.cameroonpostline.com/feed/",
-  "feedType": "rss",
-  "country": "CM"
-}
+  ,{
+    "id": 2,
+    "name": "Cameoon Post Online",
+    "website": "http://www.cameroonpostline.com",
+    "feed": "http://www.cameroonpostline.com/feed/",
+    "feedType": "rss",
+    "country": "CM"
+  }
 ]

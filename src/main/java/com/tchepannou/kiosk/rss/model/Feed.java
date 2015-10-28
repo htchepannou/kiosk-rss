@@ -3,7 +3,7 @@ package com.tchepannou.kiosk.rss.model;
 import java.util.Collections;
 import java.util.List;
 
-public class Publisher {
+public class Feed {
     //-- Attributes
     private long id;
     private String name;

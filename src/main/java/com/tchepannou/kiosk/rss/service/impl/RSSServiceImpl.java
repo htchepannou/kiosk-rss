@@ -5,8 +5,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tchepannou.kiosk.rss.model.Item;
-import com.tchepannou.kiosk.rss.model.Publisher;
-import com.tchepannou.kiosk.rss.service.PublisherService;
+import com.tchepannou.kiosk.rss.model.Feed;
+import com.tchepannou.kiosk.rss.service.FeedService;
 import com.tchepannou.kiosk.rss.service.RSSService;
 import com.tchepannou.kiosk.rss.service.URLService;
 import com.tchepannou.kiosk.rss.util.RSSFeedSAXHandler;
@@ -36,8 +36,11 @@ public class RSSServiceImpl implements RSSService {
     @Value("${amazon.s3.bucket}")
     private String bucket;
 
+    @Value("${amazon.s3.folder.items}")
+    private String itemFolder;
+
     @Autowired
-    private PublisherService publisherService;
+    private FeedService feedService;
 
     @Autowired
     private Jackson2ObjectMapperBuilder jackson;
@@ -62,21 +65,24 @@ public class RSSServiceImpl implements RSSService {
             final SAXParser sax = factory.newSAXParser();
 
             final ObjectMapper mapper = jackson.build();
-            final List<Publisher> publishers = publisherService.getPublishers();
+            final List<Feed> feeds = feedService.getFeeds();
 
-            for (Publisher publisher : publishers) {
-                if (!"rss".equals(publisher.getFeedType())) {
+            for (Feed feed : feeds) {
+                if (!"rss".equals(feed.getFeedType())) {
                     continue;
                 }
 
                 try {
 
-                    List<Item> items = fetch(publisher, sax);
-                    store(items, mapper);
+                    List<Item> items = fetch(feed, sax);
+                    LOGGER.info("{} items fetched from <{}>", items.size(), feed.getName());
+
+                    int saved = store(feed, items, mapper);
+                    LOGGER.info("{} items saved from <{}>", saved, feed.getName());
 
                 } catch (Exception e){
 
-                    LOGGER.warn("Unexpected error when processing publisher <{}>", publisher.getName(), e);
+                    LOGGER.warn("Unexpected error when processing feed <{}>", feed.getName(), e);
                     metrics.meter(name(getClass(), "fetch-error")).mark();
 
                 }
@@ -96,8 +102,8 @@ public class RSSServiceImpl implements RSSService {
 
 
     //-- Private
-    private List<Item> fetch (Publisher publisher, SAXParser sax) throws SAXException, IOException {
-        final URL url = new URL(publisher.getFeed());
+    private List<Item> fetch (Feed feed, SAXParser sax) throws SAXException, IOException {
+        final URL url = new URL(feed.getFeed());
         try (final InputStream in = urlService.fetch(url)) {
             final RSSFeedSAXHandler handler = new RSSFeedSAXHandler();
 
@@ -106,20 +112,24 @@ public class RSSServiceImpl implements RSSService {
         }
     }
 
-    private void store (List<Item> items, ObjectMapper mapper) throws IOException{
+    private int store (Feed feed, List<Item> items, ObjectMapper mapper) throws IOException{
         final S3Helper s3Helper = new S3Helper(s3);
+        int count = 0;
         for (Item item : items) {
-            final String key = item.getId() + ".json";
+            final String key = String.format("%s/%d/%s.json", itemFolder, feed.getId(), item.getId());
             final String json = mapper.writeValueAsString(item);
 
-            s3Helper.write(
-                    bucket,
-                    key,
-                    new ByteArrayInputStream(json.getBytes("utf-8")),
-                    "application/json"
-            );
-
-            metrics.meter(name(getClass(), "item")).mark();
+            if (!s3Helper.exist(bucket, key)) {
+                s3Helper.write(
+                        bucket,
+                        key,
+                        new ByteArrayInputStream(json.getBytes("utf-8")),
+                        "application/json"
+                );
+                count++;
+                metrics.meter(name(getClass(), "item")).mark();
+            }
         }
+        return count;
     }
 }
